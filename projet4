@@ -5,45 +5,71 @@ Created on Mon Sep 30 11:22:34 2019
 
 @author: ca
 """
+#Librairies utilisées
 from flatten_json import flatten
 import glob
 import collections
+import matplotlib.pyplot as plt
+import pandas as pd
 
 #Déclaration des variables
 file = open('/home/ca/Documents/Projet_4/course-v1_CNAM+01032+session01/5ade108fa0241e4b1e00d195', 'r')
 
 donnee = glob.glob('/home/ca/Documents/Projet_4/*/*')
 
+#Username
 s = file.read().strip()
 l = eval(s)
 
 #Extraction 
 l["content"]["username"]
+l["content"]["body"]
 f = flatten(l)
 
 #Boucle sur tous les fichiers 
 #Variable username en dictionnaire
-stock_username = dict()
+stock_username = list()
+stock_id = list()
+stock_thread_type = list()
+stock_course = list()
 for file in donnee:
     fichier = open(file,'r')
     s = fichier.read().strip()
     l = eval(s)
     try:
         username = l["content"]["username"]
+        thread_type = l["content"]["thread_type"]
+        course = l["content"]["courseware_title"]
     except: 
         username = ""
-    stock_username[file] = username
+    id = l["content"]["id"]    
+    stock_thread_type.append(thread_type)
+    stock_course.append(course)    
+    stock_id.append(id)
+    stock_username.append(username)
     
+#Dataframe
+df = pd.DataFrame({"id":stock_id,"username":stock_username,"nom_du_cours":stock_course,
+                   "thread_type":stock_thread_type})
+    
+df2 = (pd.crosstab(df['nom_du_cours'],df['thread_type']))
+df3 = (pd.crosstab(df['username']))
 
-#Librairie pour compter
+#Comptage simple
+comptage_cours = df['nom_du_cours'].value_counts().head(n=20)
+print(comptage_cours)
+
+#Histogramme cours question discussion
+fig_cours = df2[:20].plot(kind = 'barh', stacked= True)
+
+#Comptage des username
 comptage_tout = collections.Counter(stock_username)# Compte TOUT 
 comptage_top = collections.Counter(stock_username).most_common(20)# Compte les 20 premiers
 print(comptage_tout)
 print('###########################')
 print(comptage_top)
 
-# HISTROGRAMME DES 20 USERNAME LES PLUS UTILISE
-import matplotlib.pyplot as plt
+#HISTROGRAMME DES 20 USERNAME LES PLUS UTILISE
 fig = plt.figure(1, figsize=(30, 20))
 plt.bar(*zip(*comptage_top))
 plt.title('Top 20 des username')
