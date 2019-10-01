@@ -11,6 +11,7 @@ import glob
 import collections
 import matplotlib.pyplot as plt
 import pandas as pd
+from wordcloud import WordCloud, STOPWORDS
 
 #Déclaration des variables
 file = open('/home/ca/Documents/Projet_4/course-v1_CNAM+01032+session01/5ade108fa0241e4b1e00d195', 'r')
@@ -32,6 +33,7 @@ stock_username = list()
 stock_id = list()
 stock_thread_type = list()
 stock_course = list()
+stock_body = list()
 for file in donnee:
     fichier = open(file,'r')
     s = fichier.read().strip()
@@ -40,6 +42,7 @@ for file in donnee:
         username = l["content"]["username"]
         thread_type = l["content"]["thread_type"]
         course = l["content"]["courseware_title"]
+        body = l["content"]["body"]
     except: 
         username = ""
     id = l["content"]["id"]    
@@ -47,20 +50,41 @@ for file in donnee:
     stock_course.append(course)    
     stock_id.append(id)
     stock_username.append(username)
+    stock_body.append(body)
     
 #Dataframe
 df = pd.DataFrame({"id":stock_id,"username":stock_username,"nom_du_cours":stock_course,
                    "thread_type":stock_thread_type})
+
+username = ' '.join(stock_username)
+body = ' '.join(stock_body)
+
     
 df2 = (pd.crosstab(df['nom_du_cours'],df['thread_type']))
-df3 = (pd.crosstab(df['username']))
+
+df3 = (pd.crosstab(df['username'],df['thread_type']))
 
 #Comptage simple
 comptage_cours = df['nom_du_cours'].value_counts().head(n=20)
 print(comptage_cours)
 
-#Histogramme cours question discussion
-fig_cours = df2[:20].plot(kind = 'barh', stacked= True)
+#Histogramme horizontal barres empilées cours question discussion
+fig_cours_username = df3[:20].plot(kind = 'bar', stacked= True)
+fig_cours = df2[:20].plot(kind = 'barh', stacked = True)
+
+#Worldcloud username
+from wordcloud import WordCloud
+wordcloud_username = WordCloud().generate(username)
+
+plt.imshow(wordcloud_username, interpolation='bilinear')
+plt.show()
+
+#Worldcloud body
+from wordcloud import WordCloud
+wordcloud_body = WordCloud().generate(body)
+
+plt.imshow(wordcloud_body, interpolation='bilinear')
+plt.show()
 
 #Comptage des username
 comptage_tout = collections.Counter(stock_username)# Compte TOUT 
