@@ -11,7 +11,6 @@ import glob
 import collections
 import matplotlib.pyplot as plt
 import pandas as pd
-from wordcloud import WordCloud, STOPWORDS
 
 #Déclaration des variables
 file = open('/home/ca/Documents/Projet_4/course-v1_CNAM+01032+session01/5ade108fa0241e4b1e00d195', 'r')
@@ -55,11 +54,7 @@ for file in donnee:
 #Dataframe
 df = pd.DataFrame({"id":stock_id,"username":stock_username,"nom_du_cours":stock_course,
                    "thread_type":stock_thread_type})
-
-username = ' '.join(stock_username)
-body = ' '.join(stock_body)
-
-    
+ 
 df2 = (pd.crosstab(df['nom_du_cours'],df['thread_type']))
 
 df3 = (pd.crosstab(df['username'],df['thread_type']))
@@ -71,20 +66,6 @@ print(comptage_cours)
 #Histogramme horizontal barres empilées cours question discussion
 fig_cours_username = df3[:20].plot(kind = 'bar', stacked= True)
 fig_cours = df2[:20].plot(kind = 'barh', stacked = True)
-
-#Worldcloud username
-from wordcloud import WordCloud
-wordcloud_username = WordCloud().generate(username)
-
-plt.imshow(wordcloud_username, interpolation='bilinear')
-plt.show()
-
-#Worldcloud body
-from wordcloud import WordCloud
-wordcloud_body = WordCloud().generate(body)
-
-plt.imshow(wordcloud_body, interpolation='bilinear')
-plt.show()
 
 #Comptage des username
 comptage_tout = collections.Counter(stock_username)# Compte TOUT 
@@ -100,3 +81,30 @@ plt.title('Top 20 des username')
 plt.xlabel('Quantité')
 plt.ylabel('Prénom')
 plt.show()
+
+#Worldcloud username
+from wordcloud import WordCloud
+from nltk.corpus import stopwords
+
+username = ' '.join(stock_username)
+
+
+stopwords = stopwords.words('french')
+wordcloud_username = WordCloud(stopwords=stopwords, background_color = 'white').generate(username)
+
+plt.imshow(wordcloud_username, interpolation='bilinear')
+plt.show()
+
+#Worldcloud body
+from wordcloud import WordCloud
+from nltk.corpus import stopwords
+
+body = ' '.join(stock_body)
+
+stopwords = stopwords.words('french')
+wordcloud_body = WordCloud(stopwords=stopwords, background_color = 'white').generate(body)
+
+plt.imshow(wordcloud_body, interpolation='bilinear')
+plt.show()
+
+
