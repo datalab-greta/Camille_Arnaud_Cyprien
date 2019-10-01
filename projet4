@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Sep 30 11:22:34 2019
+
+@author: ca
+"""
+from flatten_json import flatten
+import glob
+import collections
+
+#Déclaration des variables
+file = open('/home/ca/Documents/Projet_4/course-v1_CNAM+01032+session01/5ade108fa0241e4b1e00d195', 'r')
+
+donnee = glob.glob('/home/ca/Documents/Projet_4/*/*')
+
+s = file.read().strip()
+l = eval(s)
+
+#Extraction 
+l["content"]["username"]
+f = flatten(l)
+
+#Boucle sur tous les fichiers 
+#Variable username en dictionnaire
+stock_username = dict()
+for file in donnee:
+    fichier = open(file,'r')
+    s = fichier.read().strip()
+    l = eval(s)
+    try:
+        username = l["content"]["username"]
+    except: 
+        username = ""
+    stock_username[file] = username
+    
+
+#Librairie pour compter
+comptage_tout = collections.Counter(stock_username)# Compte TOUT 
+comptage_top = collections.Counter(stock_username).most_common(20)# Compte les 20 premiers
+print(comptage_tout)
+print('###########################')
+print(comptage_top)
+
+# HISTROGRAMME DES 20 USERNAME LES PLUS UTILISE
+import matplotlib.pyplot as plt
+fig = plt.figure(1, figsize=(30, 20))
+plt.bar(*zip(*comptage_top))
+plt.title('Top 20 des username')
+plt.xlabel('Quantité')
+plt.ylabel('Prénom')
+plt.show()
