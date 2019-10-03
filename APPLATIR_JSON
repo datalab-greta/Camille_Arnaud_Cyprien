@@ -1,0 +1,49 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Oct  3 11:19:50 2019
+
+@author: ca
+"""
+
+import pprint, os
+
+from pymongo import MongoClient # librairie qui va bien
+import configparser
+
+config = configparser.ConfigParser()
+config.read_file(open(os.path.expanduser("/home/ca/Documents/datalab.cnf")))
+
+CNF = "mongo"
+BDD = "Datalab"
+
+# Ouverture connection -> mongo sur serveur
+client = MongoClient('mongodb://%s:%s@%s/?authSource=%s' % (config[CNF]['user'], config[CNF]['password'], config[CNF]['host'], BDD))
+print(client)
+
+bdd = client['Datalab'] # BDD "Datalab" de mongoDB sur serveur
+bdd
+#~ print("'Datalab' Collections:")
+#~ for cn in bdd.list_collection_names():
+    #~ print("-"+cn)
+collec = client['MOOC_GRP_CAC']['forum']
+
+def applat(mesg, niv):
+    print("%d %s : %s" % (niv, mesg['updated_at'], mesg['username']))
+    if 'children' in mesg:
+        for child in mesg['children']:
+            print("CCC")
+    if 'endorsed_responses' in mesg:
+        for child in mesg['endorsed_responses']:
+            print("EEE")
+    if 'non_endorsed_responses' in mesg:
+        for child in mesg['non_endorsed_responses']:
+            print("NNN")
+
+cursor = collec.find()
+for doc in cursor:
+    if 'content' in doc:
+        #print(doc)
+        applat(doc['content'],0)
+        print(doc)
+
