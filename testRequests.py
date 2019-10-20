@@ -1,0 +1,156 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Oct 17 15:41:35 2019
+
+@author: arnaudhub
+"""
+
+import requests, pprint, os, re
+from urllib import parse
+
+from pymongo import MongoClient # librairie qui va bien
+import configparser
+
+config = configparser.ConfigParser()
+config.read_file(open(os.path.expanduser("/home/arnaudhub/Bureau/datalab.cnf")))
+
+'''
+[FUN]
+user=arnaudhub@yahoo.fr
+password=***********************
+URL=https://www.fun-mooc.fr/
+
+[EDX]
+user=emmanuel.goudot@XXXXXXXXXXXXXX
+password=************************
+URL=https://courses.edx.org/
+'''
+
+CNF = "mongo"
+BDD = "Datalab"
+
+MOOC='FUN' #~ base = "https://www.fun-mooc.fr/courses/"
+#course = ""
+course = "OBSPM/62002/session01/"
+listURL = "discussion/forum/?ajax=1&page=1&sort_key=date&sort_order=desc"
+
+#~ MOOC='EDX' #~ base = "https://www.fun-mooc.fr/courses/"
+#~ course = "course-v1:IMTx+DMx102+2T2018"
+
+
+# Ouverture connection -> mongo sur serveur
+client = MongoClient('mongodb://%s:%s@%s/?authSource=%s' % (config[CNF]['user'], config[CNF]['password'], config[CNF]['host'], BDD))
+collec = client['Datalab']['forum6']
+
+# Recup 1er jeton (défaut)
+response = requests.get(
+    config[MOOC]['URL']+"login",
+    headers={
+        'Referer': config[MOOC]['URL']+'login'
+    }
+)
+cookie = response.headers['Set-Cookie']
+#~ print(cookie)
+csrftoken = cookie[10:42]
+csrftoken = re.sub(';.*', '', cookie[10:])
+print("csrftoken TMP="+csrftoken)
+
+# Recup 2er BON jeton (avec user & password)
+info="email=%s&password=%s" % (parse.quote_plus(config[MOOC]['user']), parse.quote_plus(config[MOOC]['password']))
+response = requests.post(
+    config[MOOC]['URL']+"login_ajax",
+    data=info,
+    headers={
+        #"Accept": "application/json, text/javascript, */*; q=0.01",
+        "X-CSRFToken": csrftoken,
+        #"X-Requested-With": "XMLHttpRequest",
+        'Cookie': cookie, 
+        'Referer': config[MOOC]['URL']+'login',
+        #'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:69.0) Gecko/20100101 Firefox/69.0',
+        #'Accept-Encoding': 'gzip, deflate, br',
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+    }
+)
+
+cookie = response.headers['Set-Cookie']
+print(cookie)
+i = cookie.find('csrftoken=')
+cookie = cookie[i+10:]
+csrftoken = re.sub(';.*', '', cookie)
+print("csrftoken OK="+csrftoken+".")
+print(response.content)
+print('---------------------------------------------------------')
+
+# Récup de la liste (général) des fils
+URL = config[MOOC]['URL']+"courses/"+course+listURL
+URL
+
+referer = config[MOOC]['URL']+"courses/"+course+"discussion/forum/"
+referer
+print("URL: "+URL+"\nref:"+referer)
+
+'''
+curl 'https://courses.edx.org/courses/course-v1:IMTx+DMx102+3T2018/discussion/forum/?ajax=1&page=1&sort_key=activity&sort_order=desc' 
+-H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:69.0) Gecko/20100101 Firefox/69.0' 
+-H 'Accept: application/json, text/javascript, */*; q=0.01' 
+-H 'Accept-Language: en-US,en;q=0.5' --compressed 
+-H 'X-NewRelic-ID: XA4GVl5ACwAEV1JQAA==' 
+-H 'X-CSRFToken: cOr0YMhee6dC6ZDq5gn0r0YeFT51A5ELRNwdi8TBC02UkA48d2AzCa01SwwlWBg4' 
+-H 'X-Requested-With: XMLHttpRequest' 
+-H 'Referer: https://courses.edx.org/courses/course-v1:IMTx+DMx102+3T2018/discussion/forum/' 
+-H 'Connection: keep-alive' 
+-H 'Cookie: optimizelyEndUserId=oeu1487228472757r0.015988550602019425; ki_t=1487228484286%3B1571054190176%3B1571054392465%3B9%3B41; ki_r=; csrftoken=cOr0YMhee6dC6ZDq5gn0r0YeFT51A5ELRNwdi8TBC02UkA48d2AzCa01SwwlWBg4; experiments_is_enterprise=false; ajs_user_id=%222824448%22; ajs_group_id=null; ajs_anonymous_id=%225294958c-71d6-4aab-8f46-27b0017d6693%22; _ga=GA1.2.642839128.1570010375; __hstc=23171429.7e52dc076e37fbe624e39f9ea4af8144.1570010375416.1570010375416.1571054190259.2; hubspotutk=7e52dc076e37fbe624e39f9ea4af8144; _fbp=fb.1.1570010376457.1069041258; prod-edx-cookie-policy-viewed=true; _gid=GA1.2.1965732397.1571054189; hsfirstvisit=; __hssrc=1; __cfduid=d8cbffa5bcd10eec8e03d87a6d4ba11771571054196; prod-edx-sessionid="1|z4i4ns6pqsohbaqm6ggxdf4cagopeg1t|cCLU1xmJkQHe|IjU1ODhhZmI2N2NlNmIyZDk5YjExNzAwM2E4ODcyODg1YmM1ZWYzZWMwZmRiOGUzNGM1ZjIwOTBlNzY5MDc5ZDUi:1iJz0m:5s1CXvxpP73odB0IenNeHVBuXOE"; anonymous_interest=b7c1842844da568a775dc984aea0041a; edxloggedin=true; sailthru_hid=0674cc1233200ed536fec8af5a880eb2573d3e05498e74785acd82f5160dfe7495e9645915292e1b8ae03959; prod-edx-user-info="{\"username\": \"EGo41000\"\054 \"version\": 1\054 \"header_urls\": {\"learner_profile\": \"https://courses.edx.org/u/EGo41000\"\054 \"resume_block\": \"https://courses.edx.org/courses/course-v1:IMTx+DMx102+2T2018/jump_to/block-v1:IMTx+DMx102+2T2018+type@html+block@24118210d1084930b826e9720084ed0e\"\054 \"logout\": \"https://courses.edx.org/logout\"\054 \"account_settings\": \"https://courses.edx.org/account/settings\"}}"; _gali=all_discussions; AWSELB=D1EF6B6510E347E5B895826CD53CF4FD55E0CFA9A9FFA4D0509C04A79307C543BC7A564BF3E9C4D2890C9877C82F4C2EA606218AFE583EAE591F65FD084E6693F1009EDC31
+'''
+
+
+response = requests.get(
+    URL,
+    #~ params={'ajax': 1, 'resp_skip': 0, 'resp_limit': 25},
+    headers={
+        "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:69.0) Gecko/20100101 Firefox/69.0",
+        "Accept": "application/json, text/javascript, */*; q=0.01",
+        "Accept-Language": "en-US,en;q=0.5",
+        "X-CSRFToken": csrftoken,
+        "X-Requested-With": "XMLHttpRequest",
+        'Referer': referer,
+        'Cookie': cookie, 
+        # EDX
+        'Pragma': 'no-cache',
+        'Cache-Control': 'no-cache',
+    },
+)
+
+print(response.status_code)
+print(response.content)
+print(response.headers)
+
+data = response.json()
+data
+#pprint.pprint(data)
+
+for disc in data['discussion_data']:
+    try:
+        URL = disc['commentable_id']+"/threads/"+disc['id']
+        print("%s [%d] %s" % (disc['id'], disc['comments_count'], disc['title']))
+        response = requests.get(
+            config[MOOC]['URL']+"courses/"+course+"/discussion/forum/"+URL,
+            params={'ajax': 1, 'resp_skip': 0, 'resp_limit': 25},
+            headers={
+                #"User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:69.0) Gecko/20100101 Firefox/69.0",
+                "Accept": "application/json, text/javascript, */*; q=0.01",
+                #"Accept-Language": "en-US,en;q=0.5",
+                "X-CSRFToken": csrftoken,
+                "X-Requested-With": "XMLHttpRequest",
+                #'Referer': 'https://www.fun-mooc.fr/courses/course-v1:MinesTelecom+04026+session05/discussion/forum/204c764cf87424d86a6259562d1d200afe30ab9a/threads/5d9481db1c89dcf269015b6f' ,
+                'Cookie': cookie, #'defaultRes=2400%2C0; csrftoken=LvmImlOzFWNoC8oQbAdPUvlP7a4ab3KZ; __utma=218362510.833297836.1474796751.1542221217.1542232713.415; acceptCookieFun=on; atuserid=%7B%22name%22%3A%22atuserid%22%2C%22val%22%3A%2231d3b730-8db4-4c4b-9b98-be9e14c92513%22%2C%22options%22%3A%7B%22end%22%3A%222020-09-27T13%3A54%3A31.376Z%22%2C%22path%22%3A%22%2F%22%7D%7D; atidvisitor=%7B%22name%22%3A%22atidvisitor%22%2C%22val%22%3A%7B%22vrn%22%3A%22-602676-%22%7D%2C%22options%22%3A%7B%22path%22%3A%22%2F%22%2C%22session%22%3A15724800%2C%22end%22%3A15724800%7D%7D; sessionid=kyxq7top4gplpn8dinb5y1ez0wdg6hrl; edxloggedin=true; edx-user-info="{\"username\": \"EGo41\"\054 \"version\": 1\054 \"email\": \"emmanuel.goudot@gmail.com\"\054 \"header_urls\": {\"learner_profile\": \"https://www.fun-mooc.fr/u/EGo41\"\054 \"logout\": \"https://www.fun-mooc.fr/logout\"\054 \"account_settings\": \"https://www.fun-mooc.fr/account/settings\"}}"'
+    
+        },
+    )
+        print(response.content)
+        fil = response.json()
+        fil
+        print(fil)
+        collec.insert_one(fil)
+    except:
+        pass
